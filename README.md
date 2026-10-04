@@ -61,5 +61,3 @@ Output `status` is `passed` or `failed`; the step exits `1` on a failed scenario
 ## Verification
 
 `install.sh` is the whole supply chain: download the archive and `SHA256SUMS` with its certificate and signature from the release, check the digest, verify the signature with `cosign verify-blob` against `^https://github.com/Pikopod/pikopod/.github/workflows/release.yml@refs/tags/` issued by GitHub's OIDC, then extract. The same command is documented at https://docs.pikopod.com/getting-started/installation.
-
-Apache-2.0, like pikopod.
