@@ -35,7 +35,10 @@ runs:
     - uses: sigstore/cosign-installer@v3
     - name: Install and verify pikopod
       shell: bash
-      run: "${{ github.action_path }}/../install.sh" "${{ inputs.version }}"
+      env:
+        PIKOPOD_VERSION: ${{ inputs.version }}
+      run: |
+        "${{ github.action_path }}/../install.sh" "$PIKOPOD_VERSION"
     - name: Import the spec
       shell: bash
       run: |
