@@ -49,7 +49,7 @@ runs:
       shell: bash
       run: |
         set +e
-        pikopod scenario check "${{ inputs.sandbox }}" ${{ inputs.scenarios }} --seed "${{ inputs.seed }}"
+        pikopod scenario check "${{ inputs.sandbox }}" ${{ inputs.scenarios }}
         CODE=$?
         set -e
         if [ "$CODE" -eq 0 ]; then echo "status=passed" >> "$GITHUB_OUTPUT"; else echo "status=failed" >> "$GITHUB_OUTPUT"; fi
