@@ -1,0 +1,70 @@
+name: pikopod spec-diff
+description: Fail the build when a provider's API spec changed in a way that breaks you, with every finding annotated on the pull request.
+author: Pikopod
+branding:
+  icon: shield
+  color: green
+
+inputs:
+  old:
+    description: The older spec. A path, an http(s) URL, or git:<ref>:<path> such as git:origin/main:openapi.yaml (needs fetch-depth 0).
+    required: true
+  new:
+    description: The newer spec. A path, an http(s) URL, or git:<ref>:<path>.
+    required: true
+  fail-on:
+    description: Exit 1 when findings at or above this level exist. ERR, WARN or INFO.
+    required: false
+    default: ERR
+  format:
+    description: Output format. githubactions annotates the diff; text, json and markdown also work.
+    required: false
+    default: githubactions
+  handoff:
+    description: Where to write the JSON report. Defaults to a file under the runner temp directory; always written.
+    required: false
+    default: ""
+  version:
+    description: The pikopod release to download and verify.
+    required: false
+    default: "0.1.2"
+
+outputs:
+  findings:
+    description: Number of findings at any level.
+    value: ${{ steps.gate.outputs.findings }}
+  report:
+    description: Path of the JSON report.
+    value: ${{ steps.gate.outputs.report }}
+  exit-code:
+    description: 0 clean, 1 breaking change at or above fail-on, 2 a document could not be loaded.
+    value: ${{ steps.gate.outputs.code }}
+
+runs:
+  using: composite
+  steps:
+    - uses: sigstore/cosign-installer@v3
+    - name: Install and verify pikopod
+      shell: bash
+      run: "${{ github.action_path }}/install.sh" "${{ inputs.version }}"
+    - name: Gate on declared drift
+      id: gate
+      shell: bash
+      run: |
+        git config --global --add safe.directory "$GITHUB_WORKSPACE" || true
+        REPORT="${{ inputs.handoff }}"
+        if [ -z "$REPORT" ]; then REPORT="$RUNNER_TEMP/pikopod-spec-diff.json"; fi
+        set +e
+        pikopod spec-diff "${{ inputs.old }}" "${{ inputs.new }}" \
+          --fail-on "${{ inputs.fail-on }}" --format "${{ inputs.format }}" --handoff "$REPORT"
+        CODE=$?
+        set -e
+        FINDINGS=0
+        if [ -f "$REPORT" ]; then FINDINGS=$(jq '.findings | length' "$REPORT"); fi
+        echo "findings=$FINDINGS" >> "$GITHUB_OUTPUT"
+        echo "report=$REPORT" >> "$GITHUB_OUTPUT"
+        echo "code=$CODE" >> "$GITHUB_OUTPUT"
+        echo "$CODE" > "$RUNNER_TEMP/pikopod-spec-diff.code"
+    - name: Fail the job on the gate's verdict
+      shell: bash
+      run: exit "$(cat "$RUNNER_TEMP/pikopod-spec-diff.code")"

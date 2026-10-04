@@ -1,0 +1,53 @@
+name: pikopod scenario-check
+description: Build a sandbox from a provider's spec and run failure scenarios against it, deterministically, with no server and no account.
+author: Pikopod
+branding:
+  icon: activity
+  color: green
+
+inputs:
+  sandbox:
+    description: Sandbox name, such as examplepay.
+    required: true
+  spec:
+    description: The spec to import. A path or an http(s) URL.
+    required: true
+  scenarios:
+    description: Space-separated scenario names, archetypes or committed packs, such as "declines retry_storm".
+    required: true
+  seed:
+    description: Run seed. Pinned so transcripts are byte-identical between runs.
+    required: false
+    default: ci-fixed
+  version:
+    description: The pikopod release to download and verify.
+    required: false
+    default: "0.1.2"
+
+outputs:
+  status:
+    description: passed or failed.
+    value: ${{ steps.check.outputs.status }}
+
+runs:
+  using: composite
+  steps:
+    - uses: sigstore/cosign-installer@v3
+    - name: Install and verify pikopod
+      shell: bash
+      run: "${{ github.action_path }}/../install.sh" "${{ inputs.version }}"
+    - name: Import the spec
+      shell: bash
+      run: |
+        if [ ! -f pikopod.yaml ]; then pikopod init; fi
+        pikopod import "${{ inputs.sandbox }}" --spec "${{ inputs.spec }}" --seed "${{ inputs.seed }}"
+    - name: Run the scenarios
+      id: check
+      shell: bash
+      run: |
+        set +e
+        pikopod scenario check "${{ inputs.sandbox }}" ${{ inputs.scenarios }} --seed "${{ inputs.seed }}"
+        CODE=$?
+        set -e
+        if [ "$CODE" -eq 0 ]; then echo "status=passed" >> "$GITHUB_OUTPUT"; else echo "status=failed" >> "$GITHUB_OUTPUT"; fi
+        exit "$CODE"

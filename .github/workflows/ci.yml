@@ -1,0 +1,55 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  spec-diff:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch the example spec and remove an endpoint from a copy
+        run: |
+          curl -fsSL -o old.json https://raw.githubusercontent.com/Pikopod/pikopod/main/docs/demo/examplepay.spec.json
+          jq 'del(.paths["/charges/{id}"])' old.json > new.json
+      - name: The gate fails on a removed endpoint
+        id: gate
+        uses: ./
+        continue-on-error: true
+        with:
+          old: old.json
+          new: new.json
+      - name: Assert exit 1 with findings
+        run: |
+          test "${{ steps.gate.outcome }}" = "failure"
+          test "${{ steps.gate.outputs.exit-code }}" = "1"
+          test "${{ steps.gate.outputs.findings }}" -ge 1
+          jq -e '.findings | length >= 1' "${{ steps.gate.outputs.report }}"
+      - name: The gate passes on an unchanged spec
+        id: clean
+        uses: ./
+        with:
+          old: old.json
+          new: old.json
+      - name: Assert exit 0 with no findings
+        run: |
+          test "${{ steps.clean.outputs.exit-code }}" = "0"
+          test "${{ steps.clean.outputs.findings }}" = "0"
+
+  scenario-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch the example spec
+        run: curl -fsSL -o examplepay.spec.json https://raw.githubusercontent.com/Pikopod/pikopod/main/docs/demo/examplepay.spec.json
+      - uses: ./scenario-check
+        id: check
+        with:
+          sandbox: examplepay
+          spec: examplepay.spec.json
+          scenarios: "declines retry_storm"
+      - run: test "${{ steps.check.outputs.status }}" = "passed"
