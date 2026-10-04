@@ -27,7 +27,7 @@ inputs:
   version:
     description: The pikopod release to download and verify.
     required: false
-    default: "0.1.2"
+    default: "0.2.0"
 
 outputs:
   findings:

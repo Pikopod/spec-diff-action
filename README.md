@@ -20,7 +20,7 @@ The job needs `fetch-depth: 0` on checkout when `old` is a git ref.
 | `fail-on` | `ERR` | `ERR`, `WARN` or `INFO`: exit 1 when findings at or above it exist. |
 | `format` | `githubactions` | `githubactions` annotates the diff; `text`, `json`, `markdown` also work. |
 | `handoff` | runner temp | Where the JSON report is written. Always written. |
-| `version` | `0.1.2` | The pikopod release to download and verify. |
+| `version` | `0.2.0` | The pikopod release to download and verify. |
 
 | Output | Meaning |
 |---|---|
@@ -54,7 +54,7 @@ Build a sandbox from the provider's spec and run failure scenarios against it. N
 | `spec` | required | Path or `http(s)` URL of the spec. |
 | `scenarios` | required | Space-separated archetypes or committed packs. Packs under `./scenarios` are found first. |
 | `seed` | `ci-fixed` | Run seed. |
-| `version` | `0.1.2` | The pikopod release to download and verify. |
+| `version` | `0.2.0` | The pikopod release to download and verify. |
 
 Output `status` is `passed` or `failed`; the step exits `1` on a failed scenario and `2` on a tool error.
 
